@@ -14,7 +14,14 @@ export function getJWTSecret(): string {
   return secret;
 }
 
-const secret = new TextEncoder().encode(getJWTSecret());
+let secret: Uint8Array | null = null;
+
+function getSecret(): Uint8Array {
+  if (!secret) {
+    secret = new TextEncoder().encode(getJWTSecret());
+  }
+  return secret;
+}
 
 /** Find a user by either username or email. */
 export async function findUserByIdentifier(identifier: string) {
@@ -42,14 +49,14 @@ export async function authenticate(identifier: string, password: string) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("8h")
-    .sign(secret);
+    .sign(getSecret());
 
   return { token, user };
 }
 
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSecret());
     return payload;
   } catch {
     return null;
