@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import StatusBadge from "@/components/status-badge";
@@ -18,15 +18,19 @@ export default async function AccountDetail({ params }: { params: Promise<{ id: 
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const account = await prisma.account.findUnique({ where: { id } });
-  if (!account) notFound();
-  if (account.userId !== user.id) notFound();
+  const { account, transactions } = await withRls(user.id, async (tx) => {
+    const account = await tx.account.findUnique({ where: { id } });
+    if (!account) notFound();
 
-  const transactions = await prisma.transaction.findMany({
-    where: { accountId: account.id },
-    orderBy: { createdAt: "desc" },
-    take: 25,
+    const transactions = await tx.transaction.findMany({
+      where: { accountId: account.id },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    });
+
+    return { account, transactions };
   });
+  if (account.userId !== user.id) notFound();
 
   const accountName = account.nickname || (account.type === "CHECKING" ? "Checking Account" : "Savings Account");
 

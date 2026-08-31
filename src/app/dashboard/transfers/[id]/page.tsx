@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import StatusBadge from "@/components/status-badge";
@@ -16,13 +16,15 @@ export default async function TransferDetail({ params }: { params: Promise<{ id:
 
   const { id } = await params;
 
-  const transfer = await prisma.transfer.findUnique({
-    where: { id },
-    include: {
-      senderAccount: { select: { id: true, accountNumber: true, type: true, userId: true } },
-      recipientAccount: { select: { id: true, accountNumber: true, type: true, userId: true } },
-    },
-  });
+  const transfer = await withRls(user.role === "ADMIN" ? RLS_SERVICE : user.id, (tx) =>
+    tx.transfer.findUnique({
+      where: { id },
+      include: {
+        senderAccount: { select: { id: true, accountNumber: true, type: true, userId: true } },
+        recipientAccount: { select: { id: true, accountNumber: true, type: true, userId: true } },
+      },
+    })
+  );
   if (!transfer) notFound();
   const isInternational = transfer.type === "INTERNATIONAL";
 

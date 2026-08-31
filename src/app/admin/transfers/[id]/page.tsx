@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import StatusBadge from "@/components/status-badge";
@@ -21,14 +21,16 @@ export default async function AdminTransferDetail({
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const transfer = await prisma.transfer.findUnique({
-    where: { id },
-    include: {
-      senderAccount: { select: { accountNumber: true, type: true, balanceCents: true, userId: true } },
-      recipientAccount: { select: { accountNumber: true, type: true, balanceCents: true, userId: true } },
-      createdByUser: { select: { name: true, email: true } },
-    },
-  });
+  const transfer = await withRls(RLS_SERVICE, (tx) =>
+    tx.transfer.findUnique({
+      where: { id },
+      include: {
+        senderAccount: { select: { accountNumber: true, type: true, balanceCents: true, userId: true } },
+        recipientAccount: { select: { accountNumber: true, type: true, balanceCents: true, userId: true } },
+        createdByUser: { select: { name: true, email: true } },
+      },
+    })
+  );
   if (!transfer) notFound();
 
   const canBlock = transfer.status === "COMPLETED";

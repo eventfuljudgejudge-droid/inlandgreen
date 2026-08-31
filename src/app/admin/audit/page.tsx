@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import { formatDateTime } from "@/lib/display";
@@ -18,11 +18,13 @@ export default async function AdminAuditPage({
   const params = await searchParams;
   const limit = Math.min(parseInt(params.limit ?? "100") || 100, 500);
 
-  const logs = await prisma.auditLog.findMany({
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    include: { actor: { select: { name: true, email: true } } },
-  });
+  const logs = await withRls(RLS_SERVICE, (tx) =>
+    tx.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: { actor: { select: { name: true, email: true } } },
+    })
+  );
 
   return (
     <>

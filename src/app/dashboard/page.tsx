@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import { formatMoney } from "@/lib/money";
@@ -15,16 +15,20 @@ export default async function Dashboard() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const accounts = await prisma.account.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "asc" },
-  });
+  const { accounts, transactions } = await withRls(user.id, async (tx) => {
+    const accounts = await tx.account.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    });
 
-  const transactions = await prisma.transaction.findMany({
-    where: { accountId: { in: accounts.map((a) => a.id) } },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    include: { account: { select: { accountNumber: true } } },
+    const transactions = await tx.transaction.findMany({
+      where: { accountId: { in: accounts.map((a) => a.id) } },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      include: { account: { select: { accountNumber: true } } },
+    });
+
+    return { accounts, transactions };
   });
 
   const total = accounts.reduce((sum, a) => sum + a.balanceCents, 0n);

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import { formatMoney } from "@/lib/money";
@@ -23,16 +23,18 @@ export default async function AdminTransfersPage({
   if (params.status) where.status = params.status;
   if (params.reference) where.reference = { contains: params.reference };
 
-  const transfers = await prisma.transfer.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: {
-      senderAccount: { select: { accountNumber: true, type: true } },
-      recipientAccount: { select: { accountNumber: true, type: true } },
-      createdByUser: { select: { name: true } },
-    },
-  });
+  const transfers = await withRls(RLS_SERVICE, (tx) =>
+    tx.transfer.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        senderAccount: { select: { accountNumber: true, type: true } },
+        recipientAccount: { select: { accountNumber: true, type: true } },
+        createdByUser: { select: { name: true } },
+      },
+    })
+  );
 
   return (
     <>

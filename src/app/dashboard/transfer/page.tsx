@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import { formatMoney } from "@/lib/money";
@@ -13,10 +13,12 @@ export default async function TransferPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const accounts = await prisma.account.findMany({
-    where: { userId: user.id, status: "ACTIVE" },
-    orderBy: { createdAt: "asc" },
-  });
+  const accounts = await withRls(user.id, (tx) =>
+    tx.account.findMany({
+      where: { userId: user.id, status: "ACTIVE" },
+      orderBy: { createdAt: "asc" },
+    })
+  );
 
   return (
     <>

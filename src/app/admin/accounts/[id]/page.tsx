@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import StatusBadge from "@/components/status-badge";
@@ -25,16 +25,20 @@ export default async function AdminAccountDetail({
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const account = await prisma.account.findUnique({
-    where: { id },
-    include: { user: { select: { name: true, email: true } } },
-  });
-  if (!account) notFound();
+  const { account, transactions } = await withRls(RLS_SERVICE, async (tx) => {
+    const account = await tx.account.findUnique({
+      where: { id },
+      include: { user: { select: { name: true, email: true } } },
+    });
+    if (!account) notFound();
 
-  const transactions = await prisma.transaction.findMany({
-    where: { accountId: id },
-    orderBy: { createdAt: "desc" },
-    take: 30,
+    const transactions = await tx.transaction.findMany({
+      where: { accountId: id },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    });
+
+    return { account, transactions };
   });
 
   return (

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import StatusBadge from "@/components/status-badge";
@@ -16,21 +16,23 @@ export default async function TransactionDetailPage({ params }: { params: Promis
 
   const { id } = await params;
 
-  const transaction = await prisma.transaction.findUnique({
-    where: { id },
-    include: {
-      account: { select: { id: true, accountNumber: true, type: true, userId: true } },
-      createdBy: { select: { name: true, email: true } },
-      transfer: {
-        select: {
-          id: true, reference: true, status: true, type: true,
-          recipientName: true, recipientIban: true,
-          senderAccount: { select: { accountNumber: true, userId: true, user: { select: { name: true } } } },
-          recipientAccount: { select: { accountNumber: true, userId: true, user: { select: { name: true } } } },
+  const transaction = await withRls(user.role === "ADMIN" ? RLS_SERVICE : user.id, (tx) =>
+    tx.transaction.findUnique({
+      where: { id },
+      include: {
+        account: { select: { id: true, accountNumber: true, type: true, userId: true } },
+        createdBy: { select: { name: true, email: true } },
+        transfer: {
+          select: {
+            id: true, reference: true, status: true, type: true,
+            recipientName: true, recipientIban: true,
+            senderAccount: { select: { accountNumber: true, userId: true, user: { select: { name: true } } } },
+            recipientAccount: { select: { accountNumber: true, userId: true, user: { select: { name: true } } } },
+          },
         },
       },
-    },
-  });
+    })
+  );
 
   if (!transaction) notFound();
   if (transaction.account?.userId !== user.id && user.role !== "ADMIN") notFound();

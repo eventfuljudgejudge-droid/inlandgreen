@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import { formatMoney } from "@/lib/money";
@@ -12,16 +12,20 @@ export default async function AdminDashboard() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const [totalAccounts, totalUsers, totalTransactions, totalTransfers, accounts] = await Promise.all([
-    prisma.account.count(),
-    prisma.user.count({ where: { role: "CUSTOMER" } }),
-    prisma.transaction.count(),
-    prisma.transfer.count(),
-    prisma.account.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
-  ]);
+  const { totalAccounts, totalUsers, totalTransactions, totalTransfers, accounts, balance } = await withRls(RLS_SERVICE, async (tx) => {
+    const [totalAccounts, totalUsers, totalTransactions, totalTransfers, accounts] = await Promise.all([
+      tx.account.count(),
+      tx.user.count({ where: { role: "CUSTOMER" } }),
+      tx.transaction.count(),
+      tx.transfer.count(),
+      tx.account.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
+    ]);
 
-  const totalBalance = await prisma.account.aggregate({ _sum: { balanceCents: true } });
-  const balance = totalBalance._sum.balanceCents ?? 0n;
+    const totalBalance = await tx.account.aggregate({ _sum: { balanceCents: true } });
+    const balance = totalBalance._sum.balanceCents ?? 0n;
+
+    return { totalAccounts, totalUsers, totalTransactions, totalTransfers, accounts, balance };
+  });
 
   return (
     <>

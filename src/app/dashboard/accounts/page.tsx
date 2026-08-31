@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import StatusBadge from "@/components/status-badge";
@@ -15,12 +15,16 @@ export default async function AccountsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const accounts = await prisma.account.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "asc" },
-  });
+  const { accounts, total } = await withRls(user.id, async (tx) => {
+    const accounts = await tx.account.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    });
 
-  const total = accounts.reduce((sum, a) => sum + a.balanceCents, 0n);
+    const total = accounts.reduce((sum, a) => sum + a.balanceCents, 0n);
+
+    return { accounts, total };
+  });
 
   return (
     <>

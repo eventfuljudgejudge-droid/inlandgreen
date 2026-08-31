@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import { formatMoney } from "@/lib/money";
@@ -13,10 +13,12 @@ export default async function AdminAccountsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const accounts = await prisma.account.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { name: true, email: true } } },
-  });
+  const accounts = await withRls(RLS_SERVICE, (tx) =>
+    tx.account.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { user: { select: { name: true, email: true } } },
+    })
+  );
 
   return (
     <>

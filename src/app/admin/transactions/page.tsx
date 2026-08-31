@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { RLS_SERVICE, withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import Amount from "@/components/amount";
@@ -22,12 +22,14 @@ export default async function AdminTransactionsPage({
   if (params.type) where.type = params.type;
   if (params.status) where.status = params.status;
 
-  const transactions = await prisma.transaction.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: { account: { select: { accountNumber: true, userId: true } } },
-  });
+  const transactions = await withRls(RLS_SERVICE, (tx) =>
+    tx.transaction.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { account: { select: { accountNumber: true, userId: true } } },
+    })
+  );
 
   return (
     <>

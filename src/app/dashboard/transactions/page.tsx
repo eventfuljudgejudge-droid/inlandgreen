@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
+import { withRls } from "@/lib/rls";
 import Topbar from "@/components/topbar";
 import { customerNav } from "@/lib/nav";
 import Amount from "@/components/amount";
@@ -20,10 +20,12 @@ export default async function TransactionsPage({
 
   const params = await searchParams;
   const accountIds = (
-    await prisma.account.findMany({
-      where: { userId: user.id },
-      select: { id: true },
-    })
+    await withRls(user.id, (tx) =>
+      tx.account.findMany({
+        where: { userId: user.id },
+        select: { id: true },
+      })
+    )
   ).map((a) => a.id);
 
   if (accountIds.length === 0) {
@@ -44,12 +46,14 @@ export default async function TransactionsPage({
   if (params.type) where.type = params.type;
   if (params.status) where.status = params.status;
 
-  const transactions = await prisma.transaction.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    include: { account: { select: { accountNumber: true, type: true, nickname: true, currency: true } } },
-  });
+  const transactions = await withRls(user.id, (tx) =>
+    tx.transaction.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { account: { select: { accountNumber: true, type: true, nickname: true, currency: true } } },
+    })
+  );
 
   return (
     <>

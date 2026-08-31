@@ -768,7 +768,7 @@ h3 {
 }
 .auth-input-wrap input {
   width: 100%;
-  padding: 22px 16px 10px;
+  padding: 26px 16px 10px;
   font-size: 15px;
   border: 1.5px solid var(--slate-200);
   border-radius: var(--radius);
@@ -818,7 +818,7 @@ h3 {
 }
 .auth-input-wrap input:focus ~ .auth-label,
 .auth-input-wrap input:not(:placeholder-shown) ~ .auth-label {
-  top: 10px;
+  top: 6px;
   transform: translateY(0);
   font-size: 11px;
   font-weight: 700;
@@ -1877,7 +1877,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* ---------- Form ---------- */
 .login-form { width: 100%; gap: 22px; }
 .login-form .auth-input-wrap input {
-  padding: 24px 16px 10px 44px;
+  padding: 26px 16px 10px 44px;
   height: 62px;
   border-radius: var(--radius);
 }
@@ -1890,7 +1890,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 }
 .login-form .auth-input-wrap input:focus ~ .auth-label,
 .login-form .auth-input-wrap input:not(:placeholder-shown) ~ .auth-label {
-  top: 8px;
+  top: 6px;
   font-size: 11px;
 }
 .login-form .auth-input-wrap .auth-icon { left: 15px; width: 19px; height: 19px; }
