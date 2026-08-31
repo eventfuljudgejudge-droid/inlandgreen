@@ -55,3 +55,6 @@ yarn-error.log*
 
 # Transient deploy scripts (may contain DB credentials) — never commit
 deploy/
+
+# Netlify edge lockfile (machine-generated)
+deno.lock
