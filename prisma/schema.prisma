@@ -79,6 +79,7 @@ model User {
   name                String
   passwordHash        String
   avatarUrl           String?
+  avatarData          Bytes?
   securityQuestion    String?
   securityAnswerHash  String?
   role                Role          @default(CUSTOMER)

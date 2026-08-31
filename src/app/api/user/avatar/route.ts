@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { writeFile, mkdir, rm } from "node:fs/promises";
-import path from "node:path";
 import sharp from "sharp";
 import { assertSameOrigin, requireUser } from "@/lib/session";
 import { AuditAction, recordAudit } from "@/lib/audit";
@@ -11,7 +9,6 @@ import { RLS_SERVICE, withRls } from "@/lib/rls";
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_DIMENSION = 512;
-const PUBLIC_DIR = path.join(process.cwd(), "public", "avatars");
 
 export async function GET() {
   try {
@@ -56,18 +53,9 @@ export async function POST(req: Request) {
     }
 
     const filename = `${user.id}-${randomUUID()}.webp`;
-    await mkdir(PUBLIC_DIR, { recursive: true });
-    await writeFile(path.join(PUBLIC_DIR, filename), output);
-
-    // Remove the previous avatar file, best-effort.
-    if (user.avatarUrl && user.avatarUrl.startsWith("/avatars/")) {
-      const oldName = path.basename(user.avatarUrl);
-      await rm(path.join(PUBLIC_DIR, oldName), { force: true }).catch(() => {});
-    }
-
     const url = `/avatars/${filename}`;
     await withRls(RLS_SERVICE, async (tx) => {
-      await tx.user.update({ where: { id: user.id }, data: { avatarUrl: url } });
+      await tx.user.update({ where: { id: user.id }, data: { avatarUrl: url, avatarData: new Uint8Array(output) } });
       await recordAudit(tx, {
         actorId: user.id,
         action: "PROFILE_PICTURE_UPDATED",
@@ -81,4 +69,3 @@ export async function POST(req: Request) {
     return errorResponse(error);
   }
 }
-
