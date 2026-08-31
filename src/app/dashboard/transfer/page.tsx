@@ -15,10 +15,12 @@ export default async function TransferPage() {
 
   const accounts = await withRls(user.id, (tx) =>
     tx.account.findMany({
-      where: { userId: user.id, status: "ACTIVE" },
+      where: { userId: user.id },
       orderBy: { createdAt: "asc" },
     })
   );
+
+  const activeAccounts = accounts.filter((a) => a.status === "ACTIVE");
 
   return (
     <>
@@ -34,7 +36,7 @@ export default async function TransferPage() {
         {accounts.length === 0 ? (
           <div className="card">
             <div className="empty">
-              You need at least one active account to send money.{" "}
+              You need at least one account to send money.{" "}
               <a href="/dashboard/accounts" style={{ color: "var(--blue-600)", fontWeight: 600 }}>
                 Create an account
               </a>
@@ -51,6 +53,7 @@ export default async function TransferPage() {
                 type: a.type,
                 nickname: a.nickname,
                 currency: a.currency,
+                status: a.status,
                 balanceCents: a.balanceCents.toString(),
               }))} />
             </div>
@@ -63,6 +66,9 @@ export default async function TransferPage() {
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14 }}>
                         {a.nickname || (a.type === "CHECKING" ? "Checking" : "Savings")}
+                        {a.status !== "ACTIVE" && (
+                          <span className="status status-warn" style={{ marginLeft: 8 }}>{a.status.replace(/_/g, " ")}</span>
+                        )}
                       </div>
                       <div className="mono muted" style={{ fontSize: 12 }}>{a.accountNumber}</div>
                     </div>

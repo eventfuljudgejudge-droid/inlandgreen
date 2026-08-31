@@ -58,3 +58,6 @@ deploy/
 
 # Netlify edge lockfile (machine-generated)
 deno.lock
+
+# One-off backfill route (remove after use)
+src/app/api/dev/

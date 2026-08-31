@@ -11,6 +11,7 @@ type AccountInfo = {
   type: string;
   nickname: string | null;
   currency: string;
+  status: string;
   balanceCents: string;
 };
 
@@ -135,6 +136,7 @@ export default function TransferForm({ accounts }: { accounts: AccountInfo[] }) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: transferType,
+          senderAccountId: fromAccountId,
           recipientIban: normalizeIban(recipientIban),
           recipientName: recipientName.trim(),
           recipientBic: normalizeIban(recipientBic),
@@ -212,7 +214,7 @@ export default function TransferForm({ accounts }: { accounts: AccountInfo[] }) 
         <select value={fromAccountId} onChange={(e) => setFromAccountId(e.target.value)}>
           {accounts.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.nickname || (a.type === "CHECKING" ? "Checking" : "Savings")} — •••• {a.accountNumber.slice(-4)} ({a.currency})
+              {a.nickname || (a.type === "CHECKING" ? "Checking" : "Savings")} — •••• {a.accountNumber.slice(-4)} ({a.currency}){a.status !== "ACTIVE" ? ` — ${a.status.replace(/_/g, " ")}` : ""}
             </option>
           ))}
         </select>

@@ -36,6 +36,7 @@ export const debitRequestSchema = z.object({
 
 export const transferRequestSchema = z.object({
   type: z.enum(["LOCAL", "INTERNATIONAL"]).optional().default("LOCAL"),
+  senderAccountId: z.string().min(1).optional(),
   recipientIban: z
     .string()
     .trim()

@@ -32,6 +32,7 @@ export async function POST(req: Request) {
     const transfer = await createTransfer({
       senderUserId: user.id,
       type: parsed.data.type,
+      senderAccountId: parsed.data.senderAccountId,
       recipientIban: parsed.data.recipientIban,
       recipientName: parsed.data.recipientName,
       recipientBic: parsed.data.recipientBic,
