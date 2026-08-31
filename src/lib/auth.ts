@@ -1,27 +1,9 @@
-import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { prisma } from "./prisma";
 import { RLS_SERVICE, withRls } from "./rls";
+import { signToken } from "./jwt";
 
-export function getJWTSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("JWT_SECRET is required in production.");
-    }
-    return "development-only-secret";
-  }
-  return secret;
-}
-
-let secret: Uint8Array | null = null;
-
-function getSecret(): Uint8Array {
-  if (!secret) {
-    secret = new TextEncoder().encode(getJWTSecret());
-  }
-  return secret;
-}
+export { getJWTSecret, verifyToken } from "./jwt";
 
 /** Find a user by either username or email. */
 export async function findUserByIdentifier(identifier: string) {
@@ -40,27 +22,14 @@ export async function authenticate(identifier: string, password: string) {
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) return null;
 
-  const token = await new SignJWT({
+  const token = await signToken({
     sub: user.id,
     role: user.role,
     name: user.name,
     email: user.email,
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("8h")
-    .sign(getSecret());
+  });
 
   return { token, user };
-}
-
-export async function verifyToken(token: string) {
-  try {
-    const { payload } = await jwtVerify(token, getSecret());
-    return payload;
-  } catch {
-    return null;
-  }
 }
 
 /** Verify a user's security answer (case-insensitive) without timing leaks that matter here. */
