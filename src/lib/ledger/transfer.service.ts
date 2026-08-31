@@ -142,9 +142,14 @@ export async function createTransfer(input: TransferInput): Promise<Transfer> {
           where: { userId: sender.id, type: "CHECKING" },
         });
     if (!senderAccount) throw new AccountNotFoundError();
-    if (senderAccount.status === "FROZEN") throw new AccountFrozenError();
-    if (senderAccount.status === "CLOSED") throw new AccountClosedError();
-    if (senderAccount.status === "RECEIVE_ONLY") throw new AccountFrozenError();
+    if (senderAccount.status === "FROZEN" || senderAccount.status === "RECEIVE_ONLY") {
+      await recordFailedOutgoingTransfer(sender.id, senderAccount, input, "ACCOUNT_FROZEN", "Your account is frozen. Kindly reach the bank to resolve this before making transfers.");
+      throw new AccountFrozenError();
+    }
+    if (senderAccount.status === "CLOSED") {
+      await recordFailedOutgoingTransfer(sender.id, senderAccount, input, "ACCOUNT_CLOSED", "This account is closed and cannot send money. Kindly reach the bank.");
+      throw new AccountClosedError();
+    }
 
     let recipientAccount: (NonNullable<Awaited<ReturnType<typeof prisma.account.findUnique>>> & {
       user: NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
@@ -455,6 +460,71 @@ export async function createTransfer(input: TransferInput): Promise<Transfer> {
   }
 
   throw new Error("Transfer failed after retries due to deadlocks.");
+}
+
+/**
+ * Record a FAILED outgoing transfer on the sender's account so it appears in
+ * the customer's activity history even though no money moved. Creates a linked
+ * FAILED Transfer + FAILED Transaction (with failureReason) for the audit trail
+ * and the Activity feed. Call inside an RLS-elevated transaction (e.g. the
+ * sender-validation step) just before throwing the blocking error.
+ */
+async function recordFailedOutgoingTransfer(
+  senderId: string,
+  senderAccount: { id: string; type: string; currency: string; accountNumber: string },
+  input: TransferInput,
+  failureCode: string,
+  failureReason: string
+): Promise<void> {
+  // Run in its own committed transaction (RLS-elevated) so the FAILED record
+  // persists even though the enclosing validation transaction rolls back.
+  await withRls(RLS_SERVICE, async (tx) => {
+    const reference = generateReference("TR");
+    const isInternational = input.type === "INTERNATIONAL";
+
+    const transaction = await createTransactionRecord(tx, {
+      reference,
+      type: "TRANSFER",
+      status: "FAILED",
+      amountCents: input.amountCents,
+      description: `Transfer failed — ${failureReason}`,
+      accountId: senderAccount.id,
+      createdById: senderId,
+      idempotencyKey: null,
+      failureReason,
+    });
+
+    const transfer = await tx.transfer.create({
+      data: {
+        reference,
+        type: isInternational ? "INTERNATIONAL" : "LOCAL",
+        senderAccountId: senderAccount.id,
+        recipientAccountId: null,
+        amountCents: input.amountCents,
+        currency: senderAccount.currency,
+        status: "FAILED",
+        description: input.description || null,
+        recipientName: input.recipientName?.trim() || null,
+        recipientIban: input.recipientIban ? normalizeIban(input.recipientIban) : null,
+        recipientBic: input.recipientBic ? normalizeIban(input.recipientBic) : null,
+        recipientBankName: input.recipientBankName?.trim() || null,
+        failureCode,
+        failureReason,
+        failedAt: new Date(),
+        transactionId: transaction.id,
+        idempotencyKey: null,
+        createdByUserId: senderId,
+      },
+    });
+
+    await recordAudit(tx, {
+      actorId: senderId,
+      action: AuditAction.TRANSFER_FAILED,
+      target: `transfer:${transfer.id}`,
+      reference,
+      metadata: { failureCode, failureReason, accountNumber: senderAccount.accountNumber },
+    });
+  });
 }
 
 async function markTransferFailed(

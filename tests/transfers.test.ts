@@ -247,6 +247,17 @@ describe("internal transfers", () => {
         idempotencyKey: `test-transfer-${Date.now()}-11`,
       })
     ).rejects.toThrow(AccountFrozenError);
+
+    const failedTransactions = await prisma.transaction.findMany({
+      where: { accountId: frozenAccount.id, status: "FAILED", type: "TRANSFER" },
+    });
+    expect(failedTransactions.length).toBeGreaterThan(0);
+    expect(failedTransactions[0].amountCents).toBe(10_000n);
+    const failedTransfers = await prisma.transfer.findMany({
+      where: { senderAccountId: frozenAccount.id, status: "FAILED" },
+    });
+    expect(failedTransfers.length).toBeGreaterThan(0);
+    expect(failedTransfers[0].failureCode).toBe("ACCOUNT_FROZEN");
   });
 
   it("12. Frozen recipient rejected", async () => {

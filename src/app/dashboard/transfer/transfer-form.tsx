@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { convertFx, currencyFromIban } from "@/lib/ledger/fx.config";
 
 type AccountInfo = {
@@ -146,9 +147,14 @@ export default function TransferForm({ accounts }: { accounts: AccountInfo[] }) 
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.message || "Transfer failed.");
+        const err = new Error(data.message || "Transfer failed.");
+        (err as any).code = data.error;
+        throw err;
       }
       setSuccess(transferType === "INTERNATIONAL" ? "International transfer sent successfully." : "Transfer completed successfully.");
+      toast.success("Transfer sent", {
+        description: transferType === "INTERNATIONAL" ? "International transfer completed successfully." : "Your transfer completed successfully.",
+      });
       setAmount("");
       setDescription("");
       setRecipientIban("");
@@ -158,7 +164,17 @@ export default function TransferForm({ accounts }: { accounts: AccountInfo[] }) 
       setRecipient(null);
       setRecipientStatus("idle");
     } catch (err: any) {
-      setError(err.message);
+      const code = err?.code;
+      let friendly = err?.message || "Transfer failed. Please try again.";
+      if (code === "ACCOUNT_FROZEN" || code === "RECEIVE_ONLY") {
+        friendly = "Transfer failed. Your account is currently restricted — kindly reach the bank to resolve this before sending money.";
+      } else if (code === "ACCOUNT_CLOSED") {
+        friendly = "Transfer failed. This account is closed and cannot send money — kindly reach the bank.";
+      } else if (code === "INSUFFICIENT_FUNDS") {
+        friendly = "Transfer failed. You do not have enough funds for this transaction.";
+      }
+      setError(friendly);
+      toast.error("Transfer failed", { description: friendly });
     } finally {
       setLoading(false);
     }
