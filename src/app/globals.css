@@ -1877,8 +1877,8 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
 /* ---------- Form ---------- */
 .login-form { width: 100%; gap: 22px; }
 .login-form .auth-input-wrap input {
-  padding: 16px 16px 12px 44px;
-  height: 54px;
+  padding: 24px 16px 10px 44px;
+  height: 62px;
   border-radius: var(--radius);
 }
 .login-form .auth-input-wrap input:focus,
@@ -1886,12 +1886,12 @@ table.table { width: 100%; border-collapse: collapse; font-size: 14px; }
   border-radius: var(--radius);
 }
 .login-form .auth-input-wrap .auth-label {
-  font-size: 14.5px;
+  font-size: 15px;
 }
 .login-form .auth-input-wrap input:focus ~ .auth-label,
 .login-form .auth-input-wrap input:not(:placeholder-shown) ~ .auth-label {
-  top: 11px;
-  font-size: 10.5px;
+  top: 8px;
+  font-size: 11px;
 }
 .login-form .auth-input-wrap .auth-icon { left: 15px; width: 19px; height: 19px; }
 .login-form .auth-input-wrap .auth-toggle { right: 10px; color: var(--slate-400); }
