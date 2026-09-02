@@ -1,5 +1,4 @@
 import Link from "next/link";
-import SignupForm from "./signup-form";
 
 const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME || "Inland Green Bank";
 
@@ -16,10 +15,10 @@ export default function SignupPage() {
         </Link>
 
         <div className="auth-hero-content">
-          <h2>Start banking<br />in minutes.</h2>
+          <h2>Personal banking<br />by invitation.</h2>
           <p>
-            Create your free account and get access to instant transfers,
-            real-time insights, and bank-grade security.
+            {APP_NAME} offers secure checking, savings, and instant transfers
+            with full bank-grade protection.
           </p>
           <div className="auth-features">
             <div className="auth-feature">
@@ -32,8 +31,8 @@ export default function SignupPage() {
             <div className="auth-feature">
               <div className="auth-feature-icon">{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/icons/zap.svg" alt="" /></div>
               <div>
-                <h3>Instant account setup</h3>
-                <p>Open checking or savings accounts in seconds.</p>
+                <h3>Instant transfers</h3>
+                <p>Move money between local and international accounts.</p>
               </div>
             </div>
             <div className="auth-feature">
@@ -54,12 +53,25 @@ export default function SignupPage() {
       <div className="auth-form-side">
         <div className="auth-card">
           <div className="auth-card-header">
-            <h1>Create your account</h1>
-            <p>Get started with {APP_NAME} in seconds.</p>
+            <h1>Registration is by application</h1>
+            <p>New accounts are opened through our customer care team.</p>
           </div>
-          <SignupForm />
+          <div className="notice notice-info" style={{ marginBottom: 16 }}>
+            Thank you for your interest in {APP_NAME}. To open an account,
+            kindly contact our customer care team and one of our representatives
+            will help you get started.
+          </div>
+          <div className="form" style={{ gap: 12 }}>
+            <div className="stat-label">Contact customer care</div>
+            <div className="muted" style={{ fontSize: 14 }}>
+              Email: support@{APP_NAME.toLowerCase().replace(/\s+/g, "")}.example
+            </div>
+            <div className="muted" style={{ fontSize: 14 }}>
+              Phone: +1 (555) 010-4100
+            </div>
+          </div>
           <div className="auth-footer">
-            Already have an account? <Link href="/login">Sign in</Link>
+            Have an account? <Link href="/login">Sign in</Link>
           </div>
         </div>
       </div>

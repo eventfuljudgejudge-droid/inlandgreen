@@ -219,7 +219,7 @@ export default function LoginPage() {
             </div>
 
             <p className="login-signup">
-              Don&apos;t have an account? <Link href="/signup">Create one</Link>
+              Don&apos;t have an account? <Link href="/signup">Apply to open one</Link>
             </p>
           </div>
         </div>
