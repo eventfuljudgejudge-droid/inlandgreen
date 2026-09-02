@@ -6,6 +6,7 @@ import Topbar from "@/components/topbar";
 import { adminNav } from "@/lib/nav";
 import { formatMoney } from "@/lib/money";
 import { maskAccountNumber } from "@/lib/display";
+import CreateCustomerSection from "./create-customer-section";
 
 const ADMIN_NAV = adminNav("/admin/accounts");
 
@@ -24,9 +25,12 @@ export default async function AdminAccountsPage() {
     <>
       <Topbar links={ADMIN_NAV} role="admin" />
       <main className="container">
-        <div style={{ marginBottom: 32 }}>
-          <h1>Accounts</h1>
-          <p className="muted" style={{ marginTop: 4 }}>{accounts.length} accounts total</p>
+        <div style={{ marginBottom: 32, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1>Accounts</h1>
+            <p className="muted" style={{ marginTop: 4 }}>{accounts.length} accounts total</p>
+          </div>
+          <CreateCustomerSection />
         </div>
 
         <div className="card table-wrap">
